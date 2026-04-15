@@ -27,7 +27,7 @@ const FooterLeftContent: React.FC<FooterLeftContentProps> = ({
   const totalDisplay = totalLevels === Infinity ? '∞' : totalLevels;
 
   return (
-    <div className="flex items-center justify-center 
+    <div className="flex flex-col items-center justify-center 
       pt-1 md:pt-2
       pb-[max(12px,env(safe-area-inset-bottom))] md:pb-4 lg:pb-5
       px-3 md:px-0">
@@ -69,6 +69,11 @@ const FooterLeftContent: React.FC<FooterLeftContentProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Footer credit */}
+      <span className="text-white/30 text-[11px] mt-1.5 font-medium tracking-wide whitespace-nowrap">
+        Getto-Dev • 2026
+      </span>
     </div>
   );
 };
