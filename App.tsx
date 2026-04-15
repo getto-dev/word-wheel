@@ -247,11 +247,11 @@ const App: React.FC = () => {
   };
 
   const levelModal = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/1 backdrop-blur-2xl animate-in fade-in duration-300 animate-[fadeIn_0.3s_ease-out]">
-      <div className="bg-black px-[55px] lg:px-[40px] py-[50px] gap-[40px] rounded-3xl shadow-2xl flex flex-col items-center mx-[55px] rainbow-border w-full max-w-[430px] text-center">
-        <h2 className="text-[48px] font-medium text-white tracking-[-1.2px] leading-[1.1]">Уровень {state.level} пройден</h2>
-        <p className="text-white/70 text-lg">Очков: {state.score}</p>
-        <div className="flex flex-col gap-[22px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/1 backdrop-blur-2xl animate-in fade-in duration-300 animate-[fadeIn_0.3s_ease-out] p-4">
+      <div className="bg-black px-5 sm:px-[55px] lg:px-[40px] py-8 sm:py-[50px] gap-6 sm:gap-[40px] rounded-3xl shadow-2xl flex flex-col items-center mx-3 sm:mx-[55px] rainbow-border w-full max-w-[400px] sm:max-w-[430px] text-center">
+        <h2 className="text-[32px] sm:text-[48px] font-medium text-white tracking-[-1.2px] leading-[1.1]">Уровень {state.level} пройден</h2>
+        <p className="text-white/70 text-base sm:text-lg">Очков: {state.score}</p>
+        <div className="flex flex-col gap-3 sm:gap-[22px] w-full">
           <button 
             onClick={() => {
               setState(prev => ({ ...prev, currentPuzzle: null, showLevelModal: false }));
@@ -259,13 +259,13 @@ const App: React.FC = () => {
                 loadLevel(state.level + 1);
               }, 10);
             }}
-            className="bg-white py-[12px] text-[18px] leading-[1.6] tracking-[-0.36px] text-black rounded-full font-medium white-button h-[64px] px-[55px] md:px-[89px] whitespace-nowrap"
+            className="bg-white py-3 px-8 sm:px-[55px] md:px-[89px] text-[16px] sm:text-[18px] leading-[1.6] tracking-[-0.36px] text-black rounded-full font-medium white-button h-[52px] sm:h-[64px] whitespace-nowrap mx-auto"
           >
             Следующий уровень →
           </button>
           <button 
             onClick={() => resetGame()}
-            className="bg-[#202020] px-[20px] py-[12px] text-white rounded-full font-medium self-center px-[28px] whitespace-nowrap"
+            className="bg-[#202020] px-5 sm:px-[28px] py-3 text-white rounded-full font-medium self-center whitespace-nowrap text-[14px] sm:text-base"
           >
             Начать заново
           </button>
@@ -275,7 +275,7 @@ const App: React.FC = () => {
   )
 
   return (
-    <div className="w-full h-full flex flex-col mx-auto rounded-2xl justify-center max-w-[1320px]">
+    <div className="w-full h-full flex flex-col mx-auto rounded-2xl justify-center max-w-[1320px] px-2 sm:px-0 game-area">
       {state.showLevelModal && levelModal}
 
       <style>{`
@@ -285,21 +285,21 @@ const App: React.FC = () => {
       `}</style>
       
       {/* Main Content Area - Grid and Wordwheel */}
-      <div className="flex flex-col short:md:flex-row short:md:flex-1 lg:flex-1 lg:flex-row overflow-hidden gap-2 sm:gap-6 md:gap-10 md:gap-10 lg:gap-4">
+      <div className="flex flex-col short:md:flex-row short:md:flex-1 lg:flex-1 lg:flex-row overflow-hidden gap-1 sm:gap-6 md:gap-10 lg:gap-4 flex-1 min-h-0">
         {/* Grid */}
-        <div className="flex short:md:flex-1 lg:flex-1 items-start md:items-center justify-center lg:max-w-1/2">
+        <div className="flex short:md:flex-1 lg:flex-1 items-start md:items-center justify-center lg:max-w-1/2 overflow-hidden">
           {state.currentPuzzle && (
-            <CrosswordGrid puzzle={state.currentPuzzle} foundWords={state.foundWords} key={`$[state.currentPuzzle.difficulty]-${state.currentPuzzle.letters}`} />
+            <CrosswordGrid puzzle={state.currentPuzzle} foundWords={state.foundWords} key={`${state.currentPuzzle.difficulty}-${state.currentPuzzle.letters}`} />
           )}
         </div>
 
         {/* Wordwheel Section */}
-        <div className="flex short:md:flex-1 short:md:justify-center lg:flex-1 flex-col items-center justify-start lg:justify-center relative">
+        <div className="flex short:md:flex-1 short:md:justify-center lg:flex-1 flex-col items-center justify-start lg:justify-center relative flex-shrink-0">
           {/* Messaging / Guess Display */}
-          <div className={`mb-[8px] sm:mb-[16px] short:md:mb-[16px] md:mb-[32px] mt-[8px] flex flex-col items-center whitespace-nowrap justify-center bg-white text-base text-black rounded-full font-medium px-7 py-2.5 leading-none ${!currentGuess && !uiMessage.text ? "invisible" : ""}`}>
+          <div className={`mb-1 sm:mb-[16px] short:md:mb-[16px] md:mb-[32px] mt-1 sm:mt-[8px] flex flex-col items-center whitespace-nowrap justify-center bg-white text-sm sm:text-base text-black rounded-full font-medium px-4 sm:px-7 py-2 sm:py-2.5 leading-none ${!currentGuess && !uiMessage.text ? "invisible" : ""}`}>
             {currentGuess ? (
               <div className="animate-in fade-in zoom-in duration-200">
-                <span className="">
+                <span>
                   {toSentenceCase(currentGuess)}
                 </span>
               </div>
@@ -314,7 +314,7 @@ const App: React.FC = () => {
                 {toSentenceCase(uiMessage.text)}
               </div>
             ) : (
-              <div className="">...</div>
+              <div>...</div>
             )}
           </div>
           

@@ -15,6 +15,7 @@ interface CrosswordGridProps {
 const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => {
   const [displayPuzzle, setDisplayPuzzle] = useState(puzzle);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
 
   if (puzzle !== displayPuzzle && !isTransitioning) {
       setIsTransitioning(true);
@@ -87,7 +88,7 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
   };
 
   return (
-    <div key={`${currentPuzzle.letters}-${currentPuzzle.difficulty}`} className="flex justify-center items-center max-w-full max-h-full min-w-0 min-h-0 short:lg:mt-0 lg:mt-[78px]">
+    <div ref={setContainerRef} key={`${currentPuzzle.letters}-${currentPuzzle.difficulty}`} className="flex justify-center items-center max-w-full max-h-full min-w-0 min-h-0 short:lg:mt-0 lg:mt-[78px] overflow-hidden">
       <style>{`
         @keyframes cellFadeIn {
           from { 
@@ -103,14 +104,50 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
           opacity: 0;
           animation: cellFadeIn 0.4s ease-out forwards;
         }
+
+        /* Responsive cell sizing using container queries */
+        .crossword-grid {
+          --cell-size: clamp(24px, 6vw, 32px);
+        }
+
+        @media (min-width: 380px) {
+          .crossword-grid {
+            --cell-size: clamp(28px, 7vw, 36px);
+          }
+        }
+
+        @media (min-width: 480px) {
+          .crossword-grid {
+            --cell-size: clamp(32px, 8vw, 42px);
+          }
+        }
+
+        @media (min-width: 640px) {
+          .crossword-grid {
+            --cell-size: 48px;
+          }
+        }
+
+        @media (min-width: 768px) and (max-height: 920px) {
+          .crossword-grid {
+            --cell-size: 48px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .crossword-grid {
+            --cell-size: 64px;
+          }
+        }
       `}</style>
       <div
         key={JSON.stringify(`${currentPuzzle.letters}-${currentPuzzle.difficulty}`)}
-        className={`grid gap-1 lg:gap-2 p-[8px] max-w-full max-h-full justify-center items-center [--cell-size:32px] md:[--cell-size:48px] short:lg:[--cell-size:48px] lg:[--cell-size:64px] ${isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
+        className={`crossword-grid grid gap-1 lg:gap-2 p-1 sm:p-2 max-w-full max-h-full justify-center items-center ${isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
         style={{
           gridTemplateColumns: `repeat(${width}, var(--cell-size))`,
           gridTemplateRows: `repeat(${height}, var(--cell-size))`,
           width: "fit-content",
+          maxWidth: "100%",
         }}
       >
         {grid.map((row, y) =>
@@ -124,11 +161,13 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
             return (
               <div
                 key={`${x}-${y}`}
-                className={`w-8 h-8 md:w-12 md:h-12 short:lg:w-12 short:lg:h-12 lg:w-16 lg:h-16 bg-[#37383B] rounded flex items-center justify-center
+                className={`bg-[#37383B] rounded flex items-center justify-center
                   ${isMasked ? "animate-cell-in" : "invisible pointer-events-none"}
                   ${revealed ? "ring-2 ring-blue-500/10" : ""}
                 `}
                 style={{
+                  width: 'var(--cell-size)',
+                  height: 'var(--cell-size)',
                   animationDelay: `${(x + y) * 50}ms`,
                   ...(revealed ? {
                     backgroundImage: `url('${getPath("/media/images/builds/nonogram-gradient.png")}')`,
@@ -140,7 +179,11 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
               >
                 {isMasked && (
                  <span 
-                    className={`text-[20px] short:lg:text-[32px] lg:text-[48px] font-medium leading-none select-none text-white
+                    className={`font-medium leading-none select-none text-white
+                      text-[clamp(14px, 3.5vw, 20px)]
+                      sm:text-[clamp(18px, 4vw, 24px)]
+                      short:lg:text-[32px]
+                      lg:text-[48px]
                       ${revealed 
                         ? "opacity-100 transition-opacity duration-500" 
                         : "opacity-0 transition-none"
