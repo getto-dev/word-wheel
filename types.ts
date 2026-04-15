@@ -16,6 +16,7 @@ export interface Puzzle {
   letters: string;
   words: PuzzleWord[];
   difficulty: number;
+  validBonusWords?: string[];
 }
 
 export interface GameState {

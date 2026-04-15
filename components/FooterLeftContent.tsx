@@ -24,6 +24,9 @@ const FooterLeftContent: React.FC<FooterLeftContentProps> = ({
     background: 'conic-gradient(from 270deg at 50% 50.12%, #4285F4 142.87deg, #BB55A1 175.78deg, #EA4335 194.23deg, #FBBC04 246.99deg, #B9D84C 268.68deg, #38A852 305.11deg, #38A852 330.36deg, #4285F4 353.77deg)'
   };
   const textStyle = "text-white text-[16px] md:text-[18px] font-medium leading-[1.2] md:leading-[1.6] md:tracking-[-0.36px] whitespace-nowrap";
+  
+  // Показываем ∞ для бесконечных уровней
+  const totalDisplay = totalLevels === Infinity ? '∞' : totalLevels;
 
   return (
     <div className="flex items-center justify-center mt-[12px] lg:mt-[24px] lg:mb-[12px]">
@@ -34,7 +37,7 @@ const FooterLeftContent: React.FC<FooterLeftContentProps> = ({
         <div className="bg-[#000000] rounded-full flex h-[48px] px-4 items-center gap-[12px]">
             <div className="min-w-[160px] md:min-w-[210px] flex justify-start">
             <span className={textStyle}>
-                Уровень {levelId}/{totalLevels} - {score} очков
+                Уровень {levelId}/{totalDisplay} - {score} очков
             </span>
             </div>
 

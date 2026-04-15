@@ -1,33 +1,39 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 
-// src/services/geminiService.ts
+// Сервис генерации пазлов - использует локальный генератор для бесконечных уровней
 import { Puzzle } from "../types";
-import { WORD_WHEEL_PUZZLES } from "../puzzles";
+import { generatePuzzle as generateLocalPuzzle } from "./puzzleGenerator";
+
+// Кэш сгенерированных пазлов
+const puzzleCache: Map<number, Puzzle> = new Map();
 
 /**
- * Simulates the previous AI generation by picking a pre-defined 
- * puzzle from our local data set based on difficulty.
+ * Генерирует пазл для указанного уровня
+ * Использует локальный словарь для создания бесконечного количества уровней
  */
 export async function generatePuzzle(level: number, previousWords: string[] = []): Promise<Puzzle> {
-  // 1. Filter puzzles by difficulty. 
-  // If no exact match for level, we take all puzzles as a fallback.
-  let pool = WORD_WHEEL_PUZZLES.filter(p => p.difficulty === level);
-  
-  if (pool.length === 0) {
-    pool = WORD_WHEEL_PUZZLES;
+  // Проверяем кэш
+  const cached = puzzleCache.get(level);
+  if (cached) {
+    puzzleCache.delete(level);
+    return cached;
   }
+  
+  // Генерируем новый пазл
+  const puzzle = await generateLocalPuzzle(level, previousWords);
+  
+  return puzzle;
+}
 
-  // 2. Pick a random puzzle from the pool
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  const selected = pool[randomIndex];
-
-  // 3. Return in the expected Puzzle format
-  // We add an empty array for validBonusWords since the static data doesn't have them
-  return {
-    ...selected,
-    validBonusWords: []
-  };
+/**
+ * Предзагрузка следующего уровня в кэш
+ */
+export async function prefetchPuzzle(level: number, previousWords: string[] = []): Promise<void> {
+  if (puzzleCache.has(level)) return;
+  
+  const puzzle = await generateLocalPuzzle(level, previousWords);
+  puzzleCache.set(level, puzzle);
 }

@@ -58,19 +58,16 @@ const App: React.FC = () => {
  
   const prefetchNextLevel = useCallback(async (currentLevel: number) => {
     const targetLevel = currentLevel + 1;
-    if (targetLevel > 6) return;
     if (activeFetch.current?.level === targetLevel) return;
 
     setState(prev => ({ ...prev, isPrefetching: true }));
-    const promise = generatePuzzle(targetLevel, usedWordsHistory.current.slice(-30));
+    const promise = generatePuzzle(targetLevel, usedWordsHistory.current.slice(-50));
     activeFetch.current = { level: targetLevel, promise };
 
     try {
       const puzzle = await promise;
       console.log("Generated Next Level Puzzle:", puzzle);
       setState(prev => {
-        // If we've already advanced to this level (or beyond) while fetching, 
-        // don't store it as "next" (it's stale or duplicate).
         if (puzzle.difficulty <= prev.level) {
           return { ...prev, isPrefetching: false };
         }
@@ -87,9 +84,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleWheelInteraction = useCallback(() => {
-    // Only prefetch if we don't have the next puzzle yet
     if (state.nextPuzzle || activeFetch.current) return;
-    
     prefetchNextLevel(state.level);
   }, [state.level, state.nextPuzzle, prefetchNextLevel]);
 
@@ -122,11 +117,10 @@ const App: React.FC = () => {
       setState(prev => ({ ...prev, loading: true, message: `Загрузка уровня ${level}...` }));
       try {
         let puzzle: Puzzle;
-        // Reuse ongoing fetch if applicable
         if (activeFetch.current?.level === level) {
           puzzle = await activeFetch.current.promise;
         } else {
-          const promise = generatePuzzle(level, usedWordsHistory.current.slice(-30));
+          const promise = generatePuzzle(level, usedWordsHistory.current.slice(-50));
           activeFetch.current = { level, promise };
           try {
             puzzle = await promise;
@@ -179,13 +173,9 @@ const App: React.FC = () => {
 
         if (newFoundWords.length === state.currentPuzzle.words.length) {
           showTemporaryMessage("УРОВЕНЬ ПРОЙДЕН", "success");
-
           playForeground(getPath("/media/audio/sfx/global/win.mp3"))
-          if (state.level >= 6) {
-             setTimeout(() => setState(prev => ({ ...prev, gameWon: true })), 1200);
-          } else {
-             setTimeout(() => setState(prev => ({ ...prev, showLevelModal: true })), 1200);
-          }
+          // Бесконечные уровни - всегда показываем модалку следующего уровня
+          setTimeout(() => setState(prev => ({ ...prev, showLevelModal: true })), 1200);
         }
       }
     } else {
@@ -236,16 +226,11 @@ const App: React.FC = () => {
       showTemporaryMessage("ПОДСКАЗКА ИСПОЛЬЗОВАНА", "info");
       playForeground(getPath("/media/audio/sfx/global/buttonclick.mp3"))
 
-      // Check for level completion via hint
       if (newFoundWords.length === state.currentPuzzle.words.length) {
         setTimeout(() => {
           showTemporaryMessage("УРОВЕНЬ ПРОЙДЕН", "success");
           playForeground(getPath("/media/audio/sfx/global/win.mp3"));
-          if (state.level >= 6) {
-             setTimeout(() => setState(prev => ({ ...prev, gameWon: true })), 1200);
-          } else {
-            setTimeout(() => setState(prev => ({ ...prev, showLevelModal: true })), 600);
-          }
+          setTimeout(() => setState(prev => ({ ...prev, showLevelModal: true })), 600);
         }, 500);
       }
     }
@@ -265,6 +250,7 @@ const App: React.FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/1 backdrop-blur-2xl animate-in fade-in duration-300 animate-[fadeIn_0.3s_ease-out]">
       <div className="bg-black px-[55px] lg:px-[40px] py-[50px] gap-[40px] rounded-3xl shadow-2xl flex flex-col items-center mx-[55px] rainbow-border w-full max-w-[430px] text-center">
         <h2 className="text-[48px] font-medium text-white tracking-[-1.2px] leading-[1.1]">Уровень {state.level} пройден</h2>
+        <p className="text-white/70 text-lg">Очков: {state.score}</p>
         <div className="flex flex-col gap-[22px]">
           <button 
             onClick={() => {
@@ -275,41 +261,22 @@ const App: React.FC = () => {
             }}
             className="bg-white py-[12px] text-[18px] leading-[1.6] tracking-[-0.36px] text-black rounded-full font-medium white-button h-[64px] px-[55px] md:px-[89px] whitespace-nowrap"
           >
-            Следующий уровень
+            Следующий уровень →
           </button>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={() => resetGame()}
             className="bg-[#202020] px-[20px] py-[12px] text-white rounded-full font-medium self-center px-[28px] whitespace-nowrap"
           >
-            Играть снова
+            Начать заново
           </button>
         </div>
       </div>
     </div>
   )
 
-  const winModal = (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/1 backdrop-blur-2xl animate-in fade-in duration-300 animate-[fadeIn_0.3s_ease-out]">
-        <div className="bg-black px-[55px] lg:px-[40px] py-[50px] gap-[40px] rounded-3xl shadow-2xl flex flex-col items-center mx-[55px] rainbow-border w-full max-w-[430px] text-center">
-          <h2 className="text-[48px] font-medium text-white tracking-[-1.2px] leading-[1.1]">Вы победили!</h2>
-          <div className="flex flex-col gap-[22px]">
-            <button 
-              onClick={() => {
-                resetGame()
-              }}
-              className="bg-white py-[12px] text-[18px] leading-[1.6] tracking-[-0.36px] text-black rounded-full font-medium white-button h-[64px] px-[55px] md:px-[89px] whitespace-nowrap"
-            >
-              Играть снова
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-
   return (
     <div className="w-full h-full flex flex-col mx-auto rounded-2xl justify-center max-w-[1320px]">
       {state.showLevelModal && levelModal}
-      {state.gameWon && (winModal)}
 
       <style>{`
         @keyframes sparkleAnim {
@@ -371,7 +338,7 @@ const App: React.FC = () => {
       {/* Actions */}
       <FooterLeftContent
         levelId={state.level}
-        totalLevels={6}
+        totalLevels={Infinity}
         score={state.score}
         button={handleHintRequest}
         buttonDisabled={state.score<30}
