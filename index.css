@@ -19,45 +19,39 @@
   --breakpoint-2xl: 1536px;
 }
 
-:root {
-  --header-mobile-height: 84px;
-  --header-height: 80px;
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-}
-
-html,
-body {
-  font-size: 16px;
+/* ==========================================
+   FOUNDATION: Full viewport, no scroll
+   ========================================== */
+html, body {
   height: 100%;
   width: 100%;
-}
-
-body {
-  background-color: #000;
   margin: 0;
   padding: 0;
-  /* Makes for way smoother font weights */
+  overflow: hidden;
+  font-size: 16px;
+  background-color: #000;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Prevent overscroll bounce on iOS */
   overscroll-behavior: none;
-  /* Safe area support */
-  padding-top: var(--safe-area-top);
-  padding-bottom: var(--safe-area-bottom);
-  padding-left: var(--safe-area-left);
-  padding-right: var(--safe-area-right);
+  /* Respect safe areas for notched devices */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ==========================================
+   VIEW TRANSITIONS
+   ========================================== */
 @view-transition {
   navigation: auto;
 }
@@ -81,25 +75,18 @@ body {
 }
 
 @keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
+/* ==========================================
+   RAINBOW GRADIENT BORDER
+   ========================================== */
 @property --gradient-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -107,13 +94,8 @@ body {
 }
 
 @keyframes rotate-gradient {
-  from {
-    --gradient-angle: 0deg;
-  }
-
-  to {
-    --gradient-angle: 360deg;
-  }
+  from { --gradient-angle: 0deg; }
+  to { --gradient-angle: 360deg; }
 }
 
 .rainbow-border {
@@ -121,13 +103,7 @@ body {
   background-image:
     linear-gradient(#000, #000),
     conic-gradient(from var(--gradient-angle),
-      #4285f4,
-      #bb55a1,
-      #ea4335,
-      #fbbc04,
-      #b9d84c,
-      #38a852,
-      #4285f4);
+      #4285f4, #bb55a1, #ea4335, #fbbc04, #b9d84c, #38a852, #4285f4);
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
@@ -144,14 +120,9 @@ body {
   background-image:
     linear-gradient(#000, #000),
     conic-gradient(from var(--gradient-angle) at 50% 50.12%,
-    #4285F4 142.8739893436432deg,
-    #BB55A1 175.78184008598328deg,
-    #EA4335 194.22826051712036deg,
-    #FBBC04 246.98917865753174deg,
-    #B9D84C 268.67698431015015deg,
-    #38A852 305.1065754890442deg,
-    #38A852 330.3632426261902deg,
-    #4285F4 353.76710414886475deg);
+    #4285F4 142.87deg, #BB55A1 175.78deg, #EA4335 194.23deg,
+    #FBBC04 246.99deg, #B9D84C 268.68deg, #38A852 305.11deg,
+    #38A852 330.36deg, #4285F4 353.77deg);
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
@@ -167,7 +138,9 @@ body {
   animation: rotate-gradient 7s linear infinite;
 }
 
-/* Fallback for browsers without View Transition API */
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
 @supports not (view-transition-name: none) {
   body {
     animation: fadeIn 0.3s ease-in-out;
@@ -175,16 +148,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;
   }
-
   @view-transition {
     navigation: none;
   }
-
   body {
     animation: none !important;
   }
@@ -196,52 +166,31 @@ body {
   --animate-gradient: gradientShift 5s linear infinite;
 
   @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-
-    100% {
-      opacity: 1;
-    }
+    0% { opacity: 0; }
+    100% { opacity: 1; }
   }
 
   @keyframes slideInUp {
-    0% {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-
-    100% {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
   }
 
   @keyframes gradientShift {
-    0% {
-      background-position: 200% 0%;
-    }
-
-    100% {
-      background-position: 0% 0%;
-    }
+    0% { background-position: 200% 0%; }
+    100% { background-position: 0% 0%; }
   }
 
   @keyframes reversePing {
-    0% {
-      transform: scale(2);
-      opacity: 0;
-    }
-
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
+    0% { transform: scale(2); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   --animate-reverse-ping: reversePing 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+/* ==========================================
+   INTERACTIVE STATES
+   ========================================== */
 .enabled-pointer:not([disabled]),
 button:not(:disabled) {
   cursor: pointer;
@@ -265,15 +214,11 @@ button:not(:disabled) {
   outline-offset: calc(-1 * var(--tw-ring-offset-width));
 }
 
-/* Universal hover state */
-a,
-button {
+a, button {
   transition: 0.4s opacity ease-in;
 }
 
-/* Since sibling links should lower opacity we need to set a hover "context" */
 @media (hover: hover) {
-
   .hover-context:has(a:hover) a:not(:hover),
   .hover-context:has(a:hover) button:not(:hover),
   .hover-context:has(button:hover) button:not(:hover),
@@ -281,50 +226,28 @@ button {
     opacity: 0.35;
     transition: opacity 0.4s ease-in-out;
   }
-
   .button-white {
     transition: opacity 0.4s ease-in-out;
   }
-
   .button-white:hover {
     opacity: 0.8;
   }
 }
 
-/* Support for text Trim (for browsers that supports it) */
+/* ==========================================
+   TYPOGRAPHY UTILITIES
+   ========================================== */
 .text-trim-both {
   text-box-trim: trim-both;
   text-box-edge: cap alphabetic;
 }
-
 .text-trim-start {
   text-box-trim: trim-start;
   text-box-edge: cap alphabetic;
 }
-
 .text-trim-end {
   text-box-trim: trim-end;
   text-box-edge: cap alphabetic;
-}
-
-.h-full-sans-nav {
-  height: calc(100dvh - var(--header-mobile-height));
-}
-
-@media (min-width: 1024px) {
-  .h-full-sans-nav {
-    height: calc(100dvh - var(--header-height));
-  }
-}
-
-.min-h-full-sans-nav {
-  min-height: calc(100dvh - var(--header-mobile-height));
-}
-
-@media (min-width: 1024px) {
-  .min-h-full-sans-nav {
-    min-height: calc(100dvh - var(--header-height));
-  }
 }
 
 .headline-big {
@@ -333,18 +256,11 @@ button {
   line-height: 0.9;
   font-weight: 500;
 }
-
 @media (min-width: 1024px) {
-  .headline-big {
-    font-size: 140px;
-  }
+  .headline-big { font-size: 140px; }
 }
-
 @media (min-width: 1280px) {
-  .headline-big {
-    font-size: 260px;
-    letter-spacing: -10.4px;
-  }
+  .headline-big { font-size: 260px; letter-spacing: -10.4px; }
 }
 
 .headline-medium {
@@ -353,12 +269,8 @@ button {
   line-height: 1.1;
   font-weight: 500;
 }
-
 @media (min-width: 1024px) {
-  .headline-medium {
-    font-size: 96px;
-    letter-spacing: -3.84px;
-  }
+  .headline-medium { font-size: 96px; letter-spacing: -3.84px; }
 }
 
 .content-wrapper {
@@ -368,12 +280,8 @@ button {
   padding-right: 20px;
   max-width: 1440px;
 }
-
 @media (min-width: 768px) {
-  .content-wrapper {
-    padding-left: 60px;
-    padding-right: 60px;
-  }
+  .content-wrapper { padding-left: 60px; padding-right: 60px; }
 }
 
 header:has(+ #landing-page) {
@@ -387,7 +295,6 @@ header:has(+ #landing-page) {
   letter-spacing: -10.4px;
   line-height: 0.9;
 }
-
 @media screen and (max-width: 1440px) {
   .headline-play {
     font-size: clamp(96px, 10vw, 260px);
@@ -400,11 +307,8 @@ header:has(+ #landing-page) {
   font-size: 24px;
   line-height: 1.2;
 }
-
 @media screen and (max-width: 1440px) {
-  .byline-play {
-    font-size: clamp(16px, 2.5vw, 24px);
-  }
+  .byline-play { font-size: clamp(16px, 2.5vw, 24px); }
 }
 
 .animate-label-out .text-trim-both {
@@ -421,15 +325,12 @@ header:has(+ #landing-page) {
 }
 
 @keyframes labelFadeOut {
-  to {
-    margin-left: 0;
-    max-width: 0;
-    opacity: 0;
-    transform: translateY(-2px);
-  }
+  to { margin-left: 0; max-width: 0; opacity: 0; transform: translateY(-2px); }
 }
 
-/* Responsive footer */
+/* ==========================================
+   FOOTER — desktop fixed, mobile static
+   ========================================== */
 footer {
   position: fixed;
   bottom: 48px;
@@ -437,56 +338,12 @@ footer {
   width: auto;
 }
 
-@media (max-width: 767px) {
-  footer {
-    position: static;
-    padding-bottom: calc(8px + var(--safe-area-bottom, 0px));
-  }
-}
-
-@media (min-width: 768px) and (max-height: 920px) {
-  footer {
-    position: static;
-    padding-block: 8px;
-  }
-}
-
-@media (min-width: 1280px) {
-  footer {
-    position: fixed;
-    padding-bottom: 0;
-  }
-}
-
-/* Prevent iOS rubber banding */
-html {
-  overflow: hidden;
-  height: 100%;
-}
-
-/* Touch improvements */
-@media (hover: none) and (pointer: coarse) {
-  /* Increase touch target sizes on touch devices */
-  button,
-  a {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Safe area for notch devices */
-@supports (padding-top: env(safe-area-inset-top)) {
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* Prevent text selection on game elements */
+/* ==========================================
+   GAME AREA — prevent all text selection
+   ========================================== */
 .game-area {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }

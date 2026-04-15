@@ -43,19 +43,6 @@ const App: React.FC = () => {
   const activeFetch = useRef<{ level: number; promise: Promise<Puzzle> } | null>(null);
   const { playForeground } = useAudio();
 
-  const footerTarget = document.getElementById('footer-portal-target');
-  const overrideFooterStyle = `
-    footer {
-      position: static;
-      padding-block: 8px;
-
-      @media (min-width: 1280px) {
-        position: fixed;
-        padding-bottom: 0;
-      }
-    }
-  `
- 
   const prefetchNextLevel = useCallback(async (currentLevel: number) => {
     const targetLevel = currentLevel + 1;
     if (activeFetch.current?.level === targetLevel) return;
@@ -174,7 +161,6 @@ const App: React.FC = () => {
         if (newFoundWords.length === state.currentPuzzle.words.length) {
           showTemporaryMessage("УРОВЕНЬ ПРОЙДЕН", "success");
           playForeground(getPath("/media/audio/sfx/global/win.mp3"))
-          // Бесконечные уровни - всегда показываем модалку следующего уровня
           setTimeout(() => setState(prev => ({ ...prev, showLevelModal: true })), 1200);
         }
       }
@@ -247,25 +233,31 @@ const App: React.FC = () => {
   };
 
   const levelModal = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/1 backdrop-blur-2xl animate-in fade-in duration-300 animate-[fadeIn_0.3s_ease-out] p-4">
-      <div className="bg-black px-5 sm:px-[55px] lg:px-[40px] py-8 sm:py-[50px] gap-6 sm:gap-[40px] rounded-3xl shadow-2xl flex flex-col items-center mx-3 sm:mx-[55px] rainbow-border w-full max-w-[400px] sm:max-w-[430px] text-center">
-        <h2 className="text-[32px] sm:text-[48px] font-medium text-white tracking-[-1.2px] leading-[1.1]">Уровень {state.level} пройден</h2>
-        <p className="text-white/70 text-base sm:text-lg">Очков: {state.score}</p>
-        <div className="flex flex-col gap-3 sm:gap-[22px] w-full">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-center animate-[fadeIn_0.2s_ease-out]">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      {/* Card — bottom sheet on mobile, centered on sm+ */}
+      <div className="relative z-10 w-full sm:w-auto sm:max-w-[400px] bg-black rounded-t-2xl sm:rounded-3xl shadow-2xl flex flex-col items-center text-center animate-[slideInUp_0.3s_ease-out]
+        px-6 py-6 sm:px-[55px] sm:py-[50px] mb-0 sm:mb-0
+        pb-[calc(24px+env(safe-area-inset-bottom,0px))] sm:pb-[50px]">
+        <div className="w-10 h-1 rounded-full bg-white/20 mb-4 sm:hidden" />
+        <h2 className="text-[28px] sm:text-[48px] font-medium text-white tracking-tight leading-tight">
+          Уровень {state.level} пройден
+        </h2>
+        <p className="text-white/50 text-sm sm:text-lg mt-1">Очков: {state.score}</p>
+        <div className="flex flex-col gap-3 sm:gap-[22px] w-full mt-5 sm:mt-[40px]">
           <button 
             onClick={() => {
               setState(prev => ({ ...prev, currentPuzzle: null, showLevelModal: false }));
-              setTimeout(() => {
-                loadLevel(state.level + 1);
-              }, 10);
+              setTimeout(() => { loadLevel(state.level + 1); }, 10);
             }}
-            className="bg-white py-3 px-8 sm:px-[55px] md:px-[89px] text-[16px] sm:text-[18px] leading-[1.6] tracking-[-0.36px] text-black rounded-full font-medium white-button h-[52px] sm:h-[64px] whitespace-nowrap mx-auto"
+            className="w-full sm:w-auto bg-white py-3.5 sm:py-3 px-8 sm:px-[55px] md:px-[89px] text-[16px] sm:text-[18px] leading-tight tracking-tight text-black rounded-full font-medium white-button h-[50px] sm:h-[64px] whitespace-nowrap flex items-center justify-center"
           >
             Следующий уровень →
           </button>
           <button 
             onClick={() => resetGame()}
-            className="bg-[#202020] px-5 sm:px-[28px] py-3 text-white rounded-full font-medium self-center whitespace-nowrap text-[14px] sm:text-base"
+            className="bg-white/10 active:bg-white/20 px-5 py-3 text-white rounded-full font-medium self-center whitespace-nowrap text-[14px] sm:text-base h-[44px] flex items-center justify-center"
           >
             Начать заново
           </button>
@@ -275,7 +267,7 @@ const App: React.FC = () => {
   )
 
   return (
-    <div className="w-full h-full flex flex-col mx-auto rounded-2xl justify-center max-w-[1320px] px-2 sm:px-0 game-area">
+    <div className="game-area w-full h-full flex flex-col max-w-[1320px] mx-auto">
       {state.showLevelModal && levelModal}
 
       <style>{`
@@ -284,37 +276,57 @@ const App: React.FC = () => {
         }
       `}</style>
       
-      {/* Main Content Area - Grid and Wordwheel */}
-      <div className="flex flex-col short:md:flex-row short:md:flex-1 lg:flex-1 lg:flex-row overflow-hidden gap-1 sm:gap-6 md:gap-10 lg:gap-4 flex-1 min-h-0">
-        {/* Grid */}
-        <div className="flex short:md:flex-1 lg:flex-1 items-start md:items-center justify-center lg:max-w-1/2 overflow-hidden">
+      {/*
+        MOBILE LAYOUT (<768px):
+        ┌──────────────────────────┐
+        │  Crossword Grid (flex-1) │ ← fills remaining space
+        ├──────────────────────────┤
+        │  [Word Pill]             │ ← minimal, 28px
+        │  [WordWheel]             │ ← fixed ~220px height
+        ├──────────────────────────┤
+        │  Footer (auto)           │ ← compact bar
+        └──────────────────────────┘
+
+        DESKTOP LAYOUT (≥768px):
+        ┌─────────────┬────────────┐
+        │  Crossword  │  WordWheel │ ← side by side, centered
+        │  Grid       │  + pill    │
+        └─────────────┴────────────┘
+        │  Footer                  │
+      */}
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row md:items-center overflow-hidden">
+
+        {/* ===== CROSSWORD GRID ===== */}
+        {/* Mobile: flex-1 fills available space above wheel+footer */}
+        {/* Desktop: takes half width */}
+        <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden
+          py-2 md:py-0 md:flex-1 md:max-w-1/2">
           {state.currentPuzzle && (
-            <CrosswordGrid puzzle={state.currentPuzzle} foundWords={state.foundWords} key={`${state.currentPuzzle.difficulty}-${state.currentPuzzle.letters}`} />
+            <CrosswordGrid 
+              puzzle={state.currentPuzzle} 
+              foundWords={state.foundWords} 
+              key={`${state.currentPuzzle.difficulty}-${state.currentPuzzle.letters}`} 
+            />
           )}
         </div>
 
-        {/* Wordwheel Section */}
-        <div className="flex short:md:flex-1 short:md:justify-center lg:flex-1 flex-col items-center justify-start lg:justify-center relative flex-shrink-0">
-          {/* Messaging / Guess Display */}
-          <div className={`mb-1 sm:mb-[16px] short:md:mb-[16px] md:mb-[32px] mt-1 sm:mt-[8px] flex flex-col items-center whitespace-nowrap justify-center bg-white text-sm sm:text-base text-black rounded-full font-medium px-4 sm:px-7 py-2 sm:py-2.5 leading-none ${!currentGuess && !uiMessage.text ? "invisible" : ""}`}>
-            {currentGuess ? (
-              <div className="animate-in fade-in zoom-in duration-200">
-                <span>
-                  {toSentenceCase(currentGuess)}
-                </span>
+        {/* ===== WHEEL SECTION ===== */}
+        {/* Mobile: fixed at bottom, ~220px total (pill + wheel) */}
+        {/* Desktop: takes other half, vertically centered */}
+        <div className="flex flex-col items-center justify-center
+          flex-shrink-0 md:flex-shrink md:flex-1 md:max-w-1/2 md:justify-center
+          relative">
+          
+          {/* Guess display pill — hidden on mobile when empty to save space */}
+          <div className={`h-7 md:h-auto flex items-center justify-center mb-1 md:mb-4 lg:mb-6
+            ${!currentGuess && !uiMessage.text ? "md:invisible" : ""}`}>
+            {(currentGuess || uiMessage.text) && (
+              <div className="bg-white text-black rounded-full font-medium
+                px-4 py-1 md:px-7 md:py-2.5
+                text-[13px] md:text-base leading-none whitespace-nowrap
+                animate-[fadeIn_0.15s_ease-out]">
+                {currentGuess ? toSentenceCase(currentGuess) : toSentenceCase(uiMessage.text)}
               </div>
-            ) : uiMessage.text ? (
-              <div
-                className={`transition-all
-                ${uiMessage.type === "success" ? "text-black" : ""}
-                ${uiMessage.type === "error" ? "text-[#514e4e]" : ""}
-                ${uiMessage.type === "info" ? "text-black" : ""}
-              `}
-              >
-                {toSentenceCase(uiMessage.text)}
-              </div>
-            ) : (
-              <div>...</div>
             )}
           </div>
           
@@ -331,19 +343,19 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <style>
-        {overrideFooterStyle}
-      </style>
-
-      {/* Actions */}
+      {/* ===== FOOTER ===== */}
       <FooterLeftContent
         levelId={state.level}
         totalLevels={Infinity}
         score={state.score}
         button={handleHintRequest}
-        buttonDisabled={state.score<30}
+        buttonDisabled={state.score < 30}
       />
-      <InfoDialog title="Разгадайте кроссворд" goal="Соединяйте буквы непрерывной линией, чтобы составлять слова. Угадывайте правильные слова, и они заполнят сетку кроссворда. Разгадайте каждое слово, чтобы пройти уровень!" onClose={() => {}} />
+      <InfoDialog 
+        title="Разгадайте кроссворд" 
+        goal="Соединяйте буквы непрерывной линией, чтобы составлять слова. Угадывайте правильные слова, и они заполнят сетку кроссворда. Разгадайте каждое слово, чтобы пройти уровень!" 
+        onClose={() => {}} 
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Puzzle } from "../types";
 import { getPath } from "../utils/path";
 
@@ -15,20 +15,19 @@ interface CrosswordGridProps {
 const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => {
   const [displayPuzzle, setDisplayPuzzle] = useState(puzzle);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [cellSize, setCellSize] = useState(40);
 
   if (puzzle !== displayPuzzle && !isTransitioning) {
-      setIsTransitioning(true);
+    setIsTransitioning(true);
   }
 
   useEffect(() => {
     if (isTransitioning) {
-      // Wait for fade out (300ms), then swap data and fade in
       const timer = setTimeout(() => {
         setDisplayPuzzle(puzzle);
         setIsTransitioning(false);
-      }, 300); 
-
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [puzzle, displayPuzzle]);
@@ -37,11 +36,8 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
 
   if (!currentPuzzle.words || currentPuzzle.words.length === 0) return null;
 
-  let minX = Infinity,
-    maxX = -Infinity,
-    minY = Infinity,
-    maxY = -Infinity;
-
+  // Calculate grid bounds
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   currentPuzzle.words.forEach(pw => {
     const { word, x, y, direction } = pw;
     for (let i = 0; i < word.length; i++) {
@@ -54,23 +50,62 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     }
   });
 
-  const width = maxX - minX + 1;
-  const height = maxY - minY + 1;
+  const gridW = maxX - minX + 1;
+  const gridH = maxY - minY + 1;
 
-  const grid: (string | null)[][] = Array.from({ length: height }, () => Array(width).fill(null));
-  const masks: boolean[][] = Array.from({ length: height }, () => Array(width).fill(false));
+  // Build grid data
+  const grid: (string | null)[][] = Array.from({ length: gridH }, () => Array(gridW).fill(null));
+  const masks: boolean[][] = Array.from({ length: gridH }, () => Array(gridW).fill(false));
 
   currentPuzzle.words.forEach(pw => {
     const { word, x, y, direction } = pw;
     for (let i = 0; i < word.length; i++) {
       const curX = (direction === "h" ? x + i : x) - minX;
       const curY = (direction === "v" ? y + i : y) - minY;
-      if (curX >= 0 && curX < width && curY >= 0 && curY < height) {
+      if (curX >= 0 && curX < gridW && curY >= 0 && curY < gridH) {
         grid[curY][curX] = word[i];
         masks[curY][curX] = true;
       }
     }
   });
+
+  // Auto-scale cells to fit the container
+  const recalcCellSize = useCallback(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const parent = el.parentElement;
+    if (!parent) return;
+
+    const availableW = parent.clientWidth - 16; // 8px padding each side
+    const availableH = parent.clientHeight - 16;
+
+    // cell + gap, gap is ~4px on mobile, ~8px on desktop
+    const isDesktop = window.innerWidth >= 768;
+    const gap = isDesktop ? 8 : 4;
+    
+    // Desktop: grid takes half width, allow up to 64px cells
+    // Mobile: fit to both dimensions
+    const maxByW = Math.floor((availableW - (gridW - 1) * gap) / gridW);
+    const maxByH = Math.floor((availableH - (gridH - 1) * gap) / gridH);
+    
+    let size = Math.min(maxByW, maxByH);
+    // Clamp between 24px (very small) and 64px (desktop max)
+    size = Math.max(24, Math.min(64, size));
+
+    setCellSize(size);
+  }, [gridW, gridH]);
+
+  useEffect(() => {
+    recalcCellSize();
+
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => recalcCellSize());
+    observer.observe(el.parentElement!);
+    return () => observer.disconnect();
+  }, [recalcCellSize]);
 
   const isRevealed = (relX: number, relY: number) => {
     const absoluteX = relX + minX;
@@ -87,108 +122,65 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     });
   };
 
+  const gap = cellSize >= 48 ? 8 : 4;
+  const fontSize = cellSize >= 56 ? 48 : cellSize >= 40 ? 32 : cellSize >= 32 ? 24 : cellSize >= 28 ? 20 : 16;
+
   return (
-    <div ref={setContainerRef} key={`${currentPuzzle.letters}-${currentPuzzle.difficulty}`} className="flex justify-center items-center max-w-full max-h-full min-w-0 min-h-0 short:lg:mt-0 lg:mt-[78px] overflow-hidden">
+    <div ref={wrapperRef} className="flex justify-center items-center w-full h-full overflow-hidden">
       <style>{`
         @keyframes cellFadeIn {
-          from { 
-            opacity: 0; 
-            transform: scale(0.8); 
-          }
-          to { 
-            opacity: 1; 
-            transform: scale(1); 
-          }
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
         }
-        .animate-cell-in {
+        .cell-animate {
           opacity: 0;
           animation: cellFadeIn 0.4s ease-out forwards;
-        }
-
-        /* Responsive cell sizing using container queries */
-        .crossword-grid {
-          --cell-size: clamp(24px, 6vw, 32px);
-        }
-
-        @media (min-width: 380px) {
-          .crossword-grid {
-            --cell-size: clamp(28px, 7vw, 36px);
-          }
-        }
-
-        @media (min-width: 480px) {
-          .crossword-grid {
-            --cell-size: clamp(32px, 8vw, 42px);
-          }
-        }
-
-        @media (min-width: 640px) {
-          .crossword-grid {
-            --cell-size: 48px;
-          }
-        }
-
-        @media (min-width: 768px) and (max-height: 920px) {
-          .crossword-grid {
-            --cell-size: 48px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .crossword-grid {
-            --cell-size: 64px;
-          }
         }
       `}</style>
       <div
         key={JSON.stringify(`${currentPuzzle.letters}-${currentPuzzle.difficulty}`)}
-        className={`crossword-grid grid gap-1 lg:gap-2 p-1 sm:p-2 max-w-full max-h-full justify-center items-center ${isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
+        className={`grid justify-center items-center transition-opacity duration-300
+          ${isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
         style={{
-          gridTemplateColumns: `repeat(${width}, var(--cell-size))`,
-          gridTemplateRows: `repeat(${height}, var(--cell-size))`,
-          width: "fit-content",
-          maxWidth: "100%",
+          gridTemplateColumns: `repeat(${gridW}, ${cellSize}px)`,
+          gridTemplateRows: `repeat(${gridH}, ${cellSize}px)`,
+          gap: `${gap}px`,
         }}
       >
         {grid.map((row, y) =>
           row.map((char, x) => {
             const revealed = isRevealed(x, y);
             const isMasked = masks[y][x];
-
-            const xPercent = width > 1 ? (x / (width - 1)) * 99 : 0;
-            const yPercent = height > 1 ? (y / (height - 1)) * 99 : 0;
+            const xPercent = gridW > 1 ? (x / (gridW - 1)) * 99 : 0;
+            const yPercent = gridH > 1 ? (y / (gridH - 1)) * 99 : 0;
 
             return (
               <div
                 key={`${x}-${y}`}
-                className={`bg-[#37383B] rounded flex items-center justify-center
-                  ${isMasked ? "animate-cell-in" : "invisible pointer-events-none"}
+                className={`bg-[#37383B] rounded-[6px] flex items-center justify-center
+                  ${isMasked ? "cell-animate" : "invisible pointer-events-none"}
                   ${revealed ? "ring-2 ring-blue-500/10" : ""}
                 `}
                 style={{
-                  width: 'var(--cell-size)',
-                  height: 'var(--cell-size)',
-                  animationDelay: `${(x + y) * 50}ms`,
+                  width: `${cellSize}px`,
+                  height: `${cellSize}px`,
+                  animationDelay: `${(x + y) * 40}ms`,
                   ...(revealed ? {
                     backgroundImage: `url('${getPath("/media/images/builds/nonogram-gradient.png")}')`,
                     backgroundRepeat: "no-repeat",
-                    backgroundSize: `${width * 100}% ${height * 100}%`,
+                    backgroundSize: `${gridW * 100}% ${gridH * 100}%`,
                     backgroundPosition: `${xPercent + 0.5}% ${yPercent + 0.5}%`,
                   } : {})
                 }}
               >
                 {isMasked && (
-                 <span 
+                  <span 
                     className={`font-medium leading-none select-none text-white
-                      text-[clamp(14px, 3.5vw, 20px)]
-                      sm:text-[clamp(18px, 4vw, 24px)]
-                      short:lg:text-[32px]
-                      lg:text-[48px]
                       ${revealed 
                         ? "opacity-100 transition-opacity duration-500" 
                         : "opacity-0 transition-none"
-                      }
-                    `}
+                      }`}
+                    style={{ fontSize: `${fontSize}px` }}
                   >
                     {char}
                   </span>

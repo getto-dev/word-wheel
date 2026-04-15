@@ -20,37 +20,53 @@ const FooterLeftContent: React.FC<FooterLeftContentProps> = ({
   button,
   buttonDisabled
 }) => {
-  const gradientBorderStyle = {
+  const gradientBorderStyle: React.CSSProperties = {
     background: 'conic-gradient(from 270deg at 50% 50.12%, #4285F4 142.87deg, #BB55A1 175.78deg, #EA4335 194.23deg, #FBBC04 246.99deg, #B9D84C 268.68deg, #38A852 305.11deg, #38A852 330.36deg, #4285F4 353.77deg)'
   };
-  const textStyle = "text-white text-[14px] xs:text-[16px] md:text-[18px] font-medium leading-[1.2] md:leading-[1.6] md:tracking-[-0.36px] whitespace-nowrap";
   
-  // Показываем ∞ для бесконечных уровней
   const totalDisplay = totalLevels === Infinity ? '∞' : totalLevels;
 
   return (
-    <div className="flex items-center justify-center mt-2 sm:mt-[12px] lg:mt-[24px] lg:mb-[12px] px-2 sm:px-0 pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="flex items-center justify-center 
+      py-2 md:py-3 lg:py-4
+      px-3 md:px-0
+      pb-[max(8px,env(safe-area-inset-bottom))] md:pb-3 lg:pb-4">
       <div 
-        className="p-[1.5px] rounded-full overflow-hidden shadow-lg w-full max-w-[500px]" 
+        className="p-[1.5px] rounded-full overflow-hidden shadow-lg" 
         style={gradientBorderStyle}
       >
-        <div className="bg-[#000000] rounded-full flex flex-col xs:flex-row h-auto xs:h-[48px] px-3 xs:px-4 py-2 xs:py-0 items-center justify-center gap-2 xs:gap-[12px]">
-            <span className={textStyle}>
-                Уровень {levelId}/{totalDisplay} — {score} очков
-            </span>
+        <div className="bg-[#000000] rounded-full flex items-center gap-2 md:gap-3 
+          px-3 md:px-4 
+          h-[40px] md:h-[44px] lg:h-[48px]">
+          
+          {/* Score info */}
+          <span className="text-white 
+            text-[13px] md:text-[15px] lg:text-[16px] 
+            font-medium leading-none whitespace-nowrap">
+            {levelId}/{totalDisplay} · {score} очк
+          </span>
 
-            <button
-            onClick={(e) => {
-                e.stopPropagation();
-                button();
-            }}
+          {/* Divider */}
+          <div className="w-px h-4 bg-white/20" />
+
+          {/* Hint button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); button(); }}
             disabled={buttonDisabled}
-            className="flex h-[36px] xs:h-[35px] px-3 xs:px-[18px] items-center justify-center bg-[#202020] hover:bg-white text-white hover:text-black rounded-full transition-colors duration-200"
-            >
-            <span className="text-[13px] xs:text-[16px] md:text-[18px] font-medium leading-[1.2] md:leading-[1.6] md:tracking-[-0.36px] whitespace-nowrap">
-                Подсказка (-30)
+            className="flex items-center justify-center 
+              bg-[#1A1A1A] disabled:opacity-30
+              hover:bg-white hover:text-black
+              active:bg-white/80
+              text-white 
+              rounded-full 
+              transition-colors duration-150
+              h-[30px] md:h-[34px] lg:h-[36px]
+              px-3 md:px-4"
+          >
+            <span className="text-[12px] md:text-[13px] lg:text-[14px] font-medium leading-none whitespace-nowrap">
+              Подсказка −30
             </span>
-            </button>
+          </button>
         </div>
       </div>
     </div>
