@@ -147,16 +147,16 @@ const WordWheel: React.FC<WordWheelProps> = ({ letters, onWordSubmit, onCurrentW
   }, [handleMove, handleEnd]);
 
   // Dynamic letter circle sizing based on wheel size
-  const letterSize = wheelSize >= 400 ? 74 : wheelSize >= 300 ? 56 : wheelSize >= 220 ? 44 : 36;
-  const fontSize = wheelSize >= 400 ? 54 : wheelSize >= 300 ? 40 : wheelSize >= 220 ? 30 : 24;
-  const shufflePad = wheelSize >= 400 ? 24 : wheelSize >= 300 ? 18 : 14;
+  const letterSize = wheelSize >= 400 ? 74 : wheelSize >= 300 ? 60 : wheelSize >= 250 ? 50 : 40;
+  const fontSize = wheelSize >= 400 ? 54 : wheelSize >= 300 ? 42 : wheelSize >= 250 ? 34 : 28;
+  const shufflePad = wheelSize >= 400 ? 24 : wheelSize >= 300 ? 20 : 16;
 
   return (
     <div
       key={letters}
       className="relative mx-auto select-none touch-none animate-wheel"
       style={{
-        width: 'min(55vw, 220px)',
+        width: 'min(80vw, 340px)',
         maxWidth: '472px',
         aspectRatio: '1',
       }}
@@ -171,12 +171,12 @@ const WordWheel: React.FC<WordWheelProps> = ({ letters, onWordSubmit, onCurrentW
         }
         @media (min-width: 768px) {
           .animate-wheel-wrapper {
-            width: min(380px, 47vw);
+            width: min(420px, 50vw);
           }
         }
         @media (min-width: 1024px) {
           .animate-wheel-wrapper {
-            width: min(472px, 40vw);
+            width: min(472px, 42vw);
           }
         }
       `}</style>

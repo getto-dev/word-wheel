@@ -77,21 +77,19 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     const parent = el.parentElement;
     if (!parent) return;
 
-    const availableW = parent.clientWidth - 16; // 8px padding each side
-    const availableH = parent.clientHeight - 16;
+    const availableW = parent.clientWidth - 8; // minimal padding
+    const availableH = parent.clientHeight - 8;
 
     // cell + gap, gap is ~4px on mobile, ~8px on desktop
     const isDesktop = window.innerWidth >= 768;
     const gap = isDesktop ? 8 : 4;
     
-    // Desktop: grid takes half width, allow up to 64px cells
-    // Mobile: fit to both dimensions
     const maxByW = Math.floor((availableW - (gridW - 1) * gap) / gridW);
     const maxByH = Math.floor((availableH - (gridH - 1) * gap) / gridH);
     
     let size = Math.min(maxByW, maxByH);
-    // Clamp between 24px (very small) and 64px (desktop max)
-    size = Math.max(24, Math.min(64, size));
+    // Clamp between 28px (very small) and 80px (desktop max)
+    size = Math.max(28, Math.min(80, size));
 
     setCellSize(size);
   }, [gridW, gridH]);
@@ -122,8 +120,8 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     });
   };
 
-  const gap = cellSize >= 48 ? 8 : 4;
-  const fontSize = cellSize >= 56 ? 48 : cellSize >= 40 ? 32 : cellSize >= 32 ? 24 : cellSize >= 28 ? 20 : 16;
+  const gap = cellSize >= 48 ? 6 : 3;
+  const fontSize = cellSize >= 64 ? 48 : cellSize >= 48 ? 36 : cellSize >= 40 ? 28 : cellSize >= 32 ? 22 : 18;
 
   return (
     <div ref={wrapperRef} className="flex justify-center items-center w-full h-full overflow-hidden">

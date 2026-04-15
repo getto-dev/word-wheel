@@ -28,9 +28,9 @@ const FooterLeftContent: React.FC<FooterLeftContentProps> = ({
 
   return (
     <div className="flex items-center justify-center 
-      py-2 md:py-3 lg:py-4
-      px-3 md:px-0
-      pb-[max(8px,env(safe-area-inset-bottom))] md:pb-3 lg:pb-4">
+      pt-1 md:pt-2
+      pb-[max(12px,env(safe-area-inset-bottom))] md:pb-4 lg:pb-5
+      px-3 md:px-0">
       <div 
         className="p-[1.5px] rounded-full overflow-hidden shadow-lg" 
         style={gradientBorderStyle}

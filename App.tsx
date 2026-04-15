@@ -300,7 +300,7 @@ const App: React.FC = () => {
         {/* Mobile: flex-1 fills available space above wheel+footer */}
         {/* Desktop: takes half width */}
         <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden
-          py-2 md:py-0 md:flex-1 md:max-w-1/2">
+          p-1 md:p-0 md:flex-1 md:max-w-1/2">
           {state.currentPuzzle && (
             <CrosswordGrid 
               puzzle={state.currentPuzzle} 
