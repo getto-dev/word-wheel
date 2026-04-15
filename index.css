@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Media query alias for short screens */
 @custom-variant short (@media (max-height: 920px));
@@ -9,10 +7,15 @@
 @custom-variant compact (@media (max-height: 1024px));
 
 @theme {
-  --font-display: "Google Sans",
-  sans-serif;
-  --font-sans: "Google Sans",
-  sans-serif;
+  --font-display: "Google Sans", sans-serif;
+  --font-sans: "Google Sans", sans-serif;
+  
+  /* Breakpoints for responsive design */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
 
 :root {
@@ -219,30 +222,27 @@ body {
   --animate-reverse-ping: reversePing 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-@layer base {
+.enabled-pointer:not([disabled]),
+button:not(:disabled) {
+  cursor: pointer;
+}
 
-  .enabled-pointer:not([disabled]),
-  button:not(:disabled) {
-    @apply cursor-pointer;
-  }
+*:focus {
+  outline: none;
+  transition: none;
+}
 
-  *:focus {
-    outline: none;
-    transition: none;
-  }
+*:focus-visible {
+  --tw-ring-color: #4275f4;
+  --tw-ring-offset-width: 2px;
+  transition: none;
+  outline: var(--tw-ring-offset-width) solid var(--tw-ring-color);
+  outline-offset: var(--tw-ring-offset-width);
+  border-radius: 2px;
+}
 
-  *:focus-visible {
-    --tw-ring-color: #4275f4;
-    --tw-ring-offset-width: 2px;
-    transition: none;
-    outline: var(--tw-ring-offset-width) solid var(--tw-ring-color);
-    outline-offset: var(--tw-ring-offset-width);
-    border-radius: 2px;
-  }
-
-  .focus-overflow:focus-visible {
-    outline-offset: calc(-1 * var(--tw-ring-offset-width));
-  }
+.focus-overflow:focus-visible {
+  outline-offset: calc(-1 * var(--tw-ring-offset-width));
 }
 
 /* Universal hover state */
@@ -288,27 +288,78 @@ button {
 }
 
 .h-full-sans-nav {
-  @apply h-[calc(100dvh-var(--header-mobile-height))] lg:h-[calc(100dvh-var(--header-height))];
+  height: calc(100dvh - var(--header-mobile-height));
+}
+
+@media (min-width: 1024px) {
+  .h-full-sans-nav {
+    height: calc(100dvh - var(--header-height));
+  }
 }
 
 .min-h-full-sans-nav {
-  @apply min-h-[calc(100dvh-var(--header-mobile-height))] lg:min-h-[calc(100dvh-var(--header-height))];
+  min-height: calc(100dvh - var(--header-mobile-height));
+}
+
+@media (min-width: 1024px) {
+  .min-h-full-sans-nav {
+    min-height: calc(100dvh - var(--header-height));
+  }
 }
 
 .headline-big {
-  @apply text-[80px] lg:text-[140px] xl:text-[260px] leading-[0.9] font-medium tracking-[-3.84px] xl:tracking-[-10.4px];
+  font-size: 80px;
+  letter-spacing: -3.84px;
+  line-height: 0.9;
+  font-weight: 500;
+}
+
+@media (min-width: 1024px) {
+  .headline-big {
+    font-size: 140px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .headline-big {
+    font-size: 260px;
+    letter-spacing: -10.4px;
+  }
 }
 
 .headline-medium {
-  @apply text-[40px] lg:text-[96px] leading-[1.1] tracking-[-1.92px] lg:tracking-[-3.84px] font-medium;
+  font-size: 40px;
+  letter-spacing: -1.92px;
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+@media (min-width: 1024px) {
+  .headline-medium {
+    font-size: 96px;
+    letter-spacing: -3.84px;
+  }
 }
 
 .content-wrapper {
-  @apply mx-auto px-[20px] md:px-[60px] max-w-[1440px];
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+  max-width: 1440px;
+}
+
+@media (min-width: 768px) {
+  .content-wrapper {
+    padding-left: 60px;
+    padding-right: 60px;
+  }
 }
 
 header:has(+ #landing-page) {
-  @apply bg-black/50 fixed w-full;
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  width: 100%;
 }
 
 .headline-play {
@@ -336,27 +387,25 @@ header:has(+ #landing-page) {
   }
 }
 
-@layer utilities {
-  .animate-label-out .text-trim-both {
-    animation: labelFadeOut 400ms ease forwards;
-    animation-delay: 3s;
-    display: inline-block;
-    margin-left: 10px;
-    max-width: 200px;
-    overflow: hidden;
-    opacity: 1;
-    transform: translateY(0);
-    transition: max-width 400ms ease-in-out;
-    white-space: nowrap;
-  }
+.animate-label-out .text-trim-both {
+  animation: labelFadeOut 400ms ease forwards;
+  animation-delay: 3s;
+  display: inline-block;
+  margin-left: 10px;
+  max-width: 200px;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-width 400ms ease-in-out;
+  white-space: nowrap;
+}
 
-  @keyframes labelFadeOut {
-    to {
-      margin-left: 0;
-      max-width: 0;
-      opacity: 0;
-      transform: translateY(-2px);
-    }
+@keyframes labelFadeOut {
+  to {
+    margin-left: 0;
+    max-width: 0;
+    opacity: 0;
+    transform: translateY(-2px);
   }
 }
 
