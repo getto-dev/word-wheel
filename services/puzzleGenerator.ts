@@ -28,13 +28,16 @@ export async function generatePuzzle(level: number, previousWords: string[] = []
   // Фильтруем и выбираем слова для пазла
   const puzzleWords = selectPuzzleWords(mainWord, possibleWords, level, previousWords);
   
-  // Создаём кроссворд
-  const crossword = buildCrossword(mainWord, puzzleWords);
+  // Определяем бонусные слова (те, что не вошли в кроссворд)
+  const crosswordResult = buildCrossword(mainWord, puzzleWords);
+  const crosswordWords = new Set(crosswordResult.map(w => w.word));
+  const bonusWords = possibleWords.filter(w => !crosswordWords.has(w) && w !== mainWord);
   
   return {
     letters: mainWord,
-    words: crossword,
+    words: crosswordResult,
     difficulty: level,
+    validBonusWords: bonusWords.slice(0, 20),
   };
 }
 
@@ -113,7 +116,7 @@ function buildCrossword(mainWord: string, additionalWords: string[]): PuzzleWord
     direction: 'h'
   });
   
-  // Создаём сетку для отслеживания пересечений
+  // Создаём сетку для отслеживания пересечений и соседей
   const grid: Map<string, string> = new Map();
   for (let i = 0; i < mainWord.length; i++) {
     grid.set(`${i},0`, mainWord[i]);
@@ -121,7 +124,7 @@ function buildCrossword(mainWord: string, additionalWords: string[]): PuzzleWord
   
   // Размещаем дополнительные слова
   for (const word of additionalWords) {
-    const placement = findBestPlacement(word, grid, mainWord);
+    const placement = findBestPlacement(word, grid, mainWord, result);
     if (placement) {
       result.push(placement);
       
@@ -142,14 +145,16 @@ function buildCrossword(mainWord: string, additionalWords: string[]): PuzzleWord
 
 /**
  * Находит лучшее место для размещения слова
+ * Учитывает правила кроссворда: нет параллельного прилегания без пересечения
  */
 function findBestPlacement(
   word: string, 
   grid: Map<string, string>,
-  mainWord: string
+  mainWord: string,
+  existingWords: PuzzleWord[]
 ): PuzzleWord | null {
   // Ищем пересечения с существующими буквами
-  const intersections: { x: number; y: number; letterIdx: number; direction: Direction }[] = [];
+  const intersections: { x: number; y: number; letterIdx: number; direction: Direction; score: number }[] = [];
   
   for (let letterIdx = 0; letterIdx < word.length; letterIdx++) {
     const letter = word[letterIdx];
@@ -158,38 +163,72 @@ function findBestPlacement(
       if (gridLetter === letter) {
         const [x, y] = key.split(',').map(Number);
         
-        // Проверяем горизонтальное размещение
-        const canPlaceHorizontal = canPlaceWord(word, x - letterIdx, y, 'h', grid);
-        if (canPlaceHorizontal) {
-          intersections.push({ x: x - letterIdx, y, letterIdx, direction: 'h' });
+        // Проверяем вертикальное размещение
+        if (canPlaceWord(word, x, y - letterIdx, 'v', grid)) {
+          const score = countIntersections(word, x, y - letterIdx, 'v', grid);
+          intersections.push({ x, y: y - letterIdx, letterIdx, direction: 'v', score });
         }
         
-        // Проверяем вертикальное размещение
-        const canPlaceVertical = canPlaceWord(word, x, y - letterIdx, 'v', grid);
-        if (canPlaceVertical) {
-          intersections.push({ x, y: y - letterIdx, letterIdx, direction: 'v' });
+        // Проверяем горизонтальное размещение
+        if (canPlaceWord(word, x - letterIdx, y, 'h', grid)) {
+          const score = countIntersections(word, x - letterIdx, y, 'h', grid);
+          intersections.push({ x: x - letterIdx, y, letterIdx, direction: 'h', score });
         }
       }
     }
   }
   
   if (intersections.length === 0) {
-    // Если нет пересечений, пробуем разместить рядом с основным словом
-    const direction = Math.random() > 0.5 ? 'v' : 'h';
-    if (direction === 'v') {
-      // Вертикально под первой буквой основного слова
-      return { word, x: 0, y: 0, direction: 'v' };
+    // Если нет пересечений, пробуем разместить вертикально из первой буквы основного слова
+    const mainLetter = word[0];
+    for (let i = 0; i < mainWord.length; i++) {
+      if (mainWord[i] === mainLetter) {
+        return { word, x: i, y: 0, direction: 'v' };
+      }
     }
     return null;
   }
   
-  // Выбираем случайное пересечение
-  const chosen = intersections[Math.floor(Math.random() * intersections.length)];
+  // Сортируем по количеству пересечений (больше = лучше) и берём лучшее
+  intersections.sort((a, b) => b.score - a.score);
+  
+  // Из топовых пересечений выбираем случайное
+  const topScore = intersections[0].score;
+  const topIntersections = intersections.filter(i => i.score >= topScore * 0.5);
+  const chosen = topIntersections[Math.floor(Math.random() * topIntersections.length)];
+  
   return { word, x: chosen.x, y: chosen.y, direction: chosen.direction };
 }
 
 /**
+ * Считает количество пересечений для оценки размещения
+ */
+function countIntersections(
+  word: string,
+  startX: number,
+  startY: number,
+  direction: Direction,
+  grid: Map<string, string>
+): number {
+  const dx = direction === 'h' ? 1 : 0;
+  const dy = direction === 'v' ? 1 : 0;
+  let count = 0;
+  
+  for (let i = 0; i < word.length; i++) {
+    const x = startX + i * dx;
+    const y = startY + i * dy;
+    const existing = grid.get(`${x},${y}`);
+    if (existing && existing === word[i]) {
+      count++;
+    }
+  }
+  
+  return count;
+}
+
+/**
  * Проверяет, можно ли разместить слово в указанном месте
+ * Включает проверку на параллельное прилегание (adjacency rules)
  */
 function canPlaceWord(
   word: string,
@@ -200,6 +239,11 @@ function canPlaceWord(
 ): boolean {
   const dx = direction === 'h' ? 1 : 0;
   const dy = direction === 'v' ? 1 : 0;
+  // Перпендикулярные направления для проверки соседей
+  const perpDx = direction === 'h' ? 0 : 1;
+  const perpDy = direction === 'h' ? 1 : 0;
+  
+  let hasIntersection = false;
   
   for (let i = 0; i < word.length; i++) {
     const x = startX + i * dx;
@@ -208,8 +252,35 @@ function canPlaceWord(
     const existingLetter = grid.get(key);
     
     if (existingLetter && existingLetter !== word[i]) {
-      return false;
+      return false; // Конфликт букв
     }
+    
+    if (existingLetter === word[i]) {
+      hasIntersection = true;
+    } else {
+      // Проверяем параллельных соседей для этой ячейки (если нет пересечения)
+      // Левый и правый соседи (для вертикального слова)
+      // Верхний и нижний соседи (для горизонтального слова)
+      const neighbor1 = grid.get(`${x + perpDx},${y + perpDy}`);
+      const neighbor2 = grid.get(`${x - perpDx},${y - perpDy}`);
+      
+      if (neighbor1 || neighbor2) {
+        return false; // Параллельное прилегание без пересечения
+      }
+    }
+  }
+  
+  // Проверяем ячейки до и после слова
+  const beforeX = startX - dx;
+  const beforeY = startY - dy;
+  const afterX = startX + word.length * dx;
+  const afterY = startY + word.length * dy;
+  
+  if (grid.get(`${beforeX},${beforeY}`)) {
+    return false; // Ячейка перед словом занята
+  }
+  if (grid.get(`${afterX},${afterY}`)) {
+    return false; // Ячейка после слова занята
   }
   
   return true;

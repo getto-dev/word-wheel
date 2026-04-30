@@ -10,17 +10,32 @@ import { getPath } from "../utils/path";
 interface CrosswordGridProps {
   puzzle: Puzzle;
   foundWords: string[];
+  revealedLetters: Record<string, string[]>;
 }
 
-const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => {
+const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords, revealedLetters }) => {
   const [displayPuzzle, setDisplayPuzzle] = useState(puzzle);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [justRevealedWords, setJustRevealedWords] = useState<Set<string>>(new Set());
+  const prevFoundWords = useRef<string[]>(foundWords);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState(40);
 
   if (puzzle !== displayPuzzle && !isTransitioning) {
     setIsTransitioning(true);
   }
+
+  // Track newly found words for animation
+  useEffect(() => {
+    const newFound = foundWords.filter(w => !prevFoundWords.current.includes(w));
+    if (newFound.length > 0) {
+      setJustRevealedWords(new Set(newFound));
+      const timer = setTimeout(() => setJustRevealedWords(new Set()), 1000);
+      prevFoundWords.current = foundWords;
+      return () => clearTimeout(timer);
+    }
+    prevFoundWords.current = foundWords;
+  }, [foundWords]);
 
   useEffect(() => {
     if (isTransitioning) {
@@ -77,10 +92,9 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     const parent = el.parentElement;
     if (!parent) return;
 
-    const availableW = parent.clientWidth - 8; // minimal padding
+    const availableW = parent.clientWidth - 8;
     const availableH = parent.clientHeight - 8;
 
-    // cell + gap, gap is ~4px on mobile, ~8px on desktop
     const isDesktop = window.innerWidth >= 768;
     const gap = isDesktop ? 8 : 4;
     
@@ -88,7 +102,6 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     const maxByH = Math.floor((availableH - (gridH - 1) * gap) / gridH);
     
     let size = Math.min(maxByW, maxByH);
-    // Clamp between 28px (very small) and 80px (desktop max)
     size = Math.max(28, Math.min(80, size));
 
     setCellSize(size);
@@ -120,6 +133,43 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
     });
   };
 
+  // Check if a cell is a hinted letter (revealed by hint)
+  const isHintedCell = (relX: number, relY: number) => {
+    const absoluteX = relX + minX;
+    const absoluteY = relY + minY;
+    for (const pw of currentPuzzle.words) {
+      if (foundWords.includes(pw.word)) continue;
+      const revealed = revealedLetters[pw.word] || [];
+      if (revealed.length === 0) continue;
+      
+      const { word, x, y, direction } = pw;
+      for (let i = 0; i < word.length; i++) {
+        const curX = direction === "h" ? x + i : x;
+        const curY = direction === "v" ? y + i : y;
+        if (curX === absoluteX && curY === absoluteY && revealed.includes(String(i))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // Check if a cell belongs to a just-revealed word (for animation)
+  const isJustRevealed = (relX: number, relY: number) => {
+    const absoluteX = relX + minX;
+    const absoluteY = relY + minY;
+    return currentPuzzle.words.some(pw => {
+      if (!justRevealedWords.has(pw.word)) return false;
+      const { word, x, y, direction } = pw;
+      for (let i = 0; i < word.length; i++) {
+        const curX = direction === "h" ? x + i : x;
+        const curY = direction === "v" ? y + i : y;
+        if (curX === absoluteX && curY === absoluteY) return true;
+      }
+      return false;
+    });
+  };
+
   const gap = cellSize >= 48 ? 6 : 3;
   const fontSize = cellSize >= 64 ? 48 : cellSize >= 48 ? 36 : cellSize >= 40 ? 28 : cellSize >= 32 ? 22 : 18;
 
@@ -133,6 +183,21 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
         .cell-animate {
           opacity: 0;
           animation: cellFadeIn 0.4s ease-out forwards;
+        }
+        @keyframes wordRevealPulse {
+          0% { transform: scale(1); box-shadow: none; }
+          50% { transform: scale(1.08); box-shadow: 0 0 12px rgba(66, 133, 244, 0.6); }
+          100% { transform: scale(1); box-shadow: none; }
+        }
+        .cell-reveal-anim {
+          animation: wordRevealPulse 0.6s ease-out;
+        }
+        @keyframes hintPulse {
+          0%, 100% { box-shadow: 0 0 0 rgba(251, 188, 4, 0); }
+          50% { box-shadow: 0 0 8px rgba(251, 188, 4, 0.5); }
+        }
+        .cell-hint {
+          animation: hintPulse 2s ease-in-out infinite;
         }
       `}</style>
       <div
@@ -149,6 +214,8 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
           row.map((char, x) => {
             const revealed = isRevealed(x, y);
             const isMasked = masks[y][x];
+            const hinted = isHintedCell(x, y);
+            const justRevealedCell = isJustRevealed(x, y);
             const xPercent = gridW > 1 ? (x / (gridW - 1)) * 99 : 0;
             const yPercent = gridH > 1 ? (y / (gridH - 1)) * 99 : 0;
 
@@ -158,6 +225,8 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
                 className={`bg-[#37383B] rounded-[6px] flex items-center justify-center
                   ${isMasked ? "cell-animate" : "invisible pointer-events-none"}
                   ${revealed ? "ring-2 ring-blue-500/10" : ""}
+                  ${justRevealedCell ? "cell-reveal-anim" : ""}
+                  ${hinted && !revealed ? "cell-hint ring-1 ring-yellow-400/30" : ""}
                 `}
                 style={{
                   width: `${cellSize}px`,
@@ -176,7 +245,9 @@ const CrosswordGrid: React.FC<CrosswordGridProps> = ({ puzzle, foundWords }) => 
                     className={`font-medium leading-none select-none text-white
                       ${revealed 
                         ? "opacity-100 transition-opacity duration-500" 
-                        : "opacity-0 transition-none"
+                        : hinted
+                          ? "opacity-60 text-yellow-300/80"
+                          : "opacity-0 transition-none"
                       }`}
                     style={{ fontSize: `${fontSize}px` }}
                   >

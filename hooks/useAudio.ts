@@ -5,35 +5,29 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export default function useAudio() {
-  // We use refs so the audio objects persist between renders
-  // without triggering unnecessary re-renders.
+export default function useAudio(initialSoundEnabled: boolean = true) {
   const bgSource = useRef<HTMLAudioElement | null>(null);
   const fgSource = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Record<string, HTMLAudioElement>>({});
   const [bgPlaying, setBgPlaying] = useState(false);
-  const soundEnabled = true
+  const soundEnabledRef = useRef(initialSoundEnabled);
 
+  // Keep ref in sync with external state
   useEffect(() => {
-    if (bgSource.current) {
-      bgSource.current.muted = !soundEnabled;
-    }
-    if (fgSource.current) {
-      fgSource.current.muted = !soundEnabled;
-    }
-  }, [soundEnabled]);
+    soundEnabledRef.current = initialSoundEnabled;
+  }, [initialSoundEnabled]);
 
   const playBackground = (path: string, volume = 0.5) => {
-    // check if we are already playing the same background music
+    if (!soundEnabledRef.current) return;
+    
     if (bgSource.current && bgSource.current.src.endsWith(path)) {
-      if (!bgPlaying && soundEnabled) {
+      if (!bgPlaying) {
         bgSource.current.play().catch(err => console.error("Audio playback failed:", err));
         setBgPlaying(true);
       }
       return;
     }
 
-    // Stop and clear the existing background track
     if (bgSource.current) {
       bgSource.current.pause();
       bgSource.current = null;
@@ -42,34 +36,30 @@ export default function useAudio() {
     const audio = new Audio(path);
     audio.loop = true;
     audio.volume = volume;
-    if (soundEnabled) {
-      audio.play().catch(err => console.error("Audio playback failed:", err));
-    }
+    audio.play().catch(err => console.error("Audio playback failed:", err));
     bgSource.current = audio;
     setBgPlaying(true);
   };
 
   const playForeground = (path: string, volume = 0.5) => {
-    if (soundEnabled) {
-      // Retrieve from cache or create new Audio instance
-      let audio = audioCache.current[path];
-      if (!audio) {
-        audio = new Audio(path);
-        audio.preload = "auto";
-        audioCache.current[path] = audio;
-      }
+    if (!soundEnabledRef.current) return;
 
-      // Reset audio state for replay
-      audio.currentTime = 0;
-      audio.loop = false;
-      audio.volume = volume;
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => console.error("Audio playback failed:", err));
-      }
-      fgSource.current = audio;
+    let audio = audioCache.current[path];
+    if (!audio) {
+      audio = new Audio(path);
+      audio.preload = "auto";
+      audioCache.current[path] = audio;
     }
+
+    audio.currentTime = 0;
+    audio.loop = false;
+    audio.volume = volume;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(err => console.error("Audio playback failed:", err));
+    }
+    fgSource.current = audio;
   };
 
   const toggleBackgroundPause = useCallback(() => {
@@ -86,11 +76,11 @@ export default function useAudio() {
   }, []);
 
   const resumeBackground = useCallback(() => {
-    if (bgSource.current && soundEnabled) {
+    if (bgSource.current && soundEnabledRef.current) {
       bgSource.current.play().catch(err => console.error("Audio playback failed:", err));
       setBgPlaying(true);
     }
-  }, [soundEnabled]);
+  }, []);
 
   useEffect(() => {
     const handleVisiblityChange = function() {

@@ -4,7 +4,6 @@
 */
 
 export function getPath(path: string) {
-  const cleanPath = path.replace('media/', '');
-  const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-  return `https://www.gstatic.com/aistudio/starter-apps/applets-io${normalizedPath}`
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return normalizedPath;
 }
